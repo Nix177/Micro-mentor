@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://Nix177.github.io/micro-mentor/",
+  "homepage": "https://Nix177.github.io/Micro-mentor/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
