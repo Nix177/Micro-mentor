@@ -5,12 +5,14 @@ import { auth } from './firebase'
 import { MessageSquare, Clock, Users, Zap, TrendingUp, Shield, Video, Star, ChevronRight, Sparkles } from 'lucide-react'
 import PostFeed from './components/PostFeed'
 import PostDetail from './components/PostDetail'
+import MentorDashboard from './components/MentorDashboard'
 import { platformStats } from './data/demoData'
 
 function AppContent() {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [viewMode, setViewMode] = useState('user'); // 'user' or 'mentor'
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -30,6 +32,16 @@ function AppContent() {
 
         return () => unsubscribe();
     }, []);
+
+    const handleSwitchMode = () => {
+        if (viewMode === 'user') {
+            setViewMode('mentor');
+            navigate('/mentor');
+        } else {
+            setViewMode('user');
+            navigate('/feed');
+        }
+    };
 
     if (loading) {
         return (
@@ -54,7 +66,10 @@ function AppContent() {
             {/* Header */}
             <nav className="sticky top-0 w-full px-6 py-4 flex justify-between items-center bg-slate-900/80 backdrop-blur-xl border-b border-slate-800/50 z-40">
                 <div
-                    onClick={() => navigate('/')}
+                    onClick={() => {
+                        setViewMode('user');
+                        navigate('/');
+                    }}
                     className="flex items-center gap-3 cursor-pointer group"
                 >
                     <div className="relative">
@@ -79,14 +94,23 @@ function AppContent() {
                     </div>
 
                     <button
-                        onClick={() => navigate('/feed')}
-                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-all border border-slate-700"
+                        onClick={handleSwitchMode}
+                        className={`px-4 py-2 rounded-lg font-bold transition-all border shadow-lg ${viewMode === 'user'
+                            ? 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700'
+                            : 'bg-blue-600 border-blue-500 text-white shadow-blue-500/20'
+                            }`}
                     >
-                        Explorer
+                        {viewMode === 'user' ? 'Vue Mentor 👨‍🏫' : 'Vue Utilisateur 👤'}
                     </button>
-                    <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-lg font-medium transition-all shadow-lg shadow-blue-500/25">
-                        Devenir Mentor
-                    </button>
+
+                    {viewMode === 'user' && (
+                        <button
+                            onClick={() => navigate('/feed')}
+                            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-all border border-slate-700 hidden sm:block"
+                        >
+                            Explorer
+                        </button>
+                    )}
                 </div>
             </nav>
 
@@ -96,6 +120,7 @@ function AppContent() {
                     <Route path="/" element={<HomePage navigate={navigate} />} />
                     <Route path="/feed" element={<FeedPage navigate={navigate} />} />
                     <Route path="/post/:postId" element={<PostPage navigate={navigate} />} />
+                    <Route path="/mentor" element={<MentorPage />} />
                 </Routes>
             </main>
 
@@ -358,6 +383,14 @@ function PostPage({ navigate }) {
     return (
         <div className="py-8 px-6">
             <PostDetail postId={postId} onBack={() => navigate('/feed')} />
+        </div>
+    );
+}
+
+function MentorPage() {
+    return (
+        <div className="py-8 px-6">
+            <MentorDashboard />
         </div>
     );
 }
