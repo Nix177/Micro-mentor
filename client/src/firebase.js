@@ -1,17 +1,17 @@
 // Firebase configuration for Micro-Mentor
-// Replace with your Firebase project credentials
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyDzUfmx3JCZf4639e-QAMpZYrikTWkPx2I",
+    authDomain: "chatroulette-test.firebaseapp.com",
+    projectId: "chatroulette-test",
+    storageBucket: "chatroulette-test.firebasestorage.app",
+    messagingSenderId: "477083456462",
+    appId: "1:477083456462:web:544b25c8eec39c425e119f",
+    measurementId: "G-WH5R8FK713"
 };
 
 // Initialize Firebase
