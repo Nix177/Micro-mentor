@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import { WebSocketServer } from 'ws';
@@ -8,9 +9,16 @@ const port = 3000;
 app.use(cors());
 app.use(express.json());
 
+app.use((req, res, next) => {
+  console.log(`[REQUEST] ${req.method} ${req.url}`);
+  next();
+});
+
 // --- Mock TimeLedger (Blockchain Simulation) ---
 // "TimeLedger.py : Grand livre de compte immuable"
 const timeLedger = new Map();
+
+
 
 // Helper to init user
 const getOrCreateWallet = (userId) => {

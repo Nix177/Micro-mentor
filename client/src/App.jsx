@@ -14,21 +14,34 @@ function App() {
 
     const findMentor = async () => {
         setIsFinding(true);
+        const topic = document.getElementById('topic-input').value;
+        const context = document.getElementById('context-input').value;
 
-        // DEMO MODE: Force success after 2s without backend
-        setTimeout(() => {
+        try {
+            const response = await fetch('http://localhost:3000/api/request-help', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: "user_" + Date.now(),
+                    topic,
+                    context
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.mentor) {
+                setCurrentSession(data);
+                setMode('session');
+            } else {
+                alert("No mentor found: " + data.message);
+            }
+        } catch (error) {
+            console.error("Error finding mentor:", error);
+            alert("Connection failed. Is the server running?");
+        } finally {
             setIsFinding(false);
-            const mockSession = {
-                id: 123,
-                mentor: {
-                    name: "Sarah Chen",
-                    expertise: ["React", "State Management"],
-                    rating: 4.9
-                }
-            };
-            setCurrentSession(mockSession);
-            setMode('session');
-        }, 2000);
+        }
     };
 
     const endSession = () => {
@@ -173,12 +186,12 @@ function App() {
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium text-slate-400 mb-1">Topic</label>
-                                        <input type="text" placeholder="e.g. React useEffect loop" className="w-full bg-black/40 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand-500 transition-colors" />
+                                        <input id="topic-input" type="text" placeholder="e.g. React useEffect loop" className="w-full bg-black/40 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand-500 transition-colors" />
                                     </div>
 
                                     <div>
                                         <label className="block text-sm font-medium text-slate-400 mb-1">Context (or record audio)</label>
-                                        <textarea rows="4" placeholder="I'm trying to update state but..." className="w-full bg-black/40 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand-500 transition-colors"></textarea>
+                                        <textarea id="context-input" rows="4" placeholder="I'm trying to update state but..." className="w-full bg-black/40 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand-500 transition-colors"></textarea>
                                     </div>
 
                                     <button onClick={findMentor} className="w-full py-4 bg-brand-600 rounded-lg font-bold shadow-lg mt-4 hover:brightness-110 transition text-white">
