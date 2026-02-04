@@ -1,225 +1,158 @@
-import { useState } from 'react'
-import { Rocket, Clock, MessageSquare, Zap, Info, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom'
+import { signInAnonymously, onAuthStateChanged } from 'firebase/auth'
+import { auth } from './firebase'
+import { MessageSquare, Clock, Users, Zap } from 'lucide-react'
+import PostFeed from './components/PostFeed'
+import PostDetail from './components/PostDetail'
 import SessionView from './components/SessionView'
 
-function App() {
-    const [mode, setMode] = useState('landing'); // landing, requesting, session
-    const [currentSession, setCurrentSession] = useState(null);
-    const [isFinding, setIsFinding] = useState(false);
-    const [showGuide, setShowGuide] = useState(false);
+function AppContent() {
+    const navigate = useNavigate();
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    const handleRequestHelp = () => {
-        setMode('requesting');
-    }
-
-    const findMentor = async () => {
-        setIsFinding(true);
-        const topic = document.getElementById('topic-input').value;
-        const context = document.getElementById('context-input').value;
-
-        try {
-            const response = await fetch('http://localhost:3000/api/request-help', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: "user_" + Date.now(),
-                    topic,
-                    context
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.mentor) {
-                setCurrentSession(data);
-                setMode('session');
+    useEffect(() => {
+        // Anonymous auth for Firebase
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                setUser(user);
+                setLoading(false);
             } else {
-                alert("No mentor found: " + data.message);
+                signInAnonymously(auth).catch(console.error);
             }
-        } catch (error) {
-            console.error("Error finding mentor:", error);
-            alert("Connection failed. Is the server running?");
-        } finally {
-            setIsFinding(false);
-        }
-    };
+        });
+        return () => unsubscribe();
+    }, []);
 
-    const endSession = () => {
-        setMode('landing');
-        setCurrentSession(null);
-    };
-
-    if (mode === 'session' && currentSession) {
-        return <SessionView session={currentSession} onEndSession={endSession} />;
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
     }
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-
-            {/* Background Ambience */}
-            <div className="absolute inset-0 bg-slate-900 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black"></div>
+        <div className="min-h-screen bg-slate-900 text-white">
+            {/* Background */}
+            <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black -z-10"></div>
 
             {/* Header */}
-            <nav className="absolute top-0 w-full p-6 flex justify-between items-center glass z-10">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-amber-600 bg-clip-text text-transparent cursor-pointer" onClick={() => setMode('landing')}>
-                    Flash Mentor
+            <nav className="sticky top-0 w-full p-4 flex justify-between items-center bg-slate-900/80 backdrop-blur-md border-b border-slate-800 z-40">
+                <h1
+                    onClick={() => navigate('/')}
+                    className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent cursor-pointer flex items-center gap-2"
+                >
+                    <MessageSquare className="w-6 h-6 text-blue-500" />
+                    Micro-Mentor
                 </h1>
                 <div className="flex gap-4 items-center">
-                    <button
-                        onClick={() => setShowGuide(!showGuide)}
-                        className="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-600 hover:bg-blue-500 text-white transition-colors animate-pulse border border-blue-400"
-                    >
-                        <Info className="w-4 h-4" />
-                        <span className="text-xs font-bold uppercase">Guide Déploiement</span>
-                    </button>
-
-                    <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700">
-                        <Clock className="w-4 h-4 text-yellow-400" />
-                        <span className="text-xs font-mono font-bold text-yellow-100">10 min</span>
+                    <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700">
+                        <Clock className="w-4 h-4 text-blue-400" />
+                        <span className="text-xs font-mono font-medium text-blue-100">
+                            {localStorage.getItem('userPseudo') || 'Anonyme'}
+                        </span>
                     </div>
                 </div>
             </nav>
 
-            {/* Guide Modal */}
-            {showGuide && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl max-w-lg w-full relative shadow-2xl">
-                        <button onClick={() => setShowGuide(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
-                            <X className="w-6 h-6" />
-                        </button>
-                        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                            🚀 Prochaines Étapes
-                        </h3>
-                        <div className="space-y-4 text-sm text-slate-300">
-                            <p className="bg-blue-900/30 p-3 rounded-lg border border-blue-500/30">
-                                <strong>1. Installer gh-pages :</strong><br />
-                                <code className="text-blue-300">npm install gh-pages --save-dev</code>
-                            </p>
-                            <p className="bg-purple-900/30 p-3 rounded-lg border border-purple-500/30">
-                                <strong>2. Déployer :</strong><br />
-                                <code className="text-purple-300">npm run deploy</code>
-                            </p>
-                            <p className="bg-green-900/30 p-3 rounded-lg border border-green-500/30">
-                                <strong>3. Activer sur GitHub :</strong><br />
-                                Allez dans <em>Settings {'>'} Pages</em> et vérifiez que la source est sur la branche <code>gh-pages</code>.
-                            </p>
-                            <div className="pt-4 border-t border-slate-700 text-xs text-slate-500">
-                                Note : J'ai déjà configuré le fichier <code>package.json</code> et <code>vite.config.js</code> pour vous. Lancez juste les commandes !
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Main Content */}
-            <main className="max-w-4xl w-full text-center mt-16">
-
-                {mode === 'landing' && (
-                    <div className="space-y-8 animate-fade-in">
-                        <div className="inline-block px-4 py-1 rounded-full glass text-xs font-mono text-yellow-400 mb-4 border-yellow-500/30">
-                            SOS EXPERTISE • 3 MIN CHRONO
-                        </div>
-
-                        <h2 className="text-6xl font-extrabold tracking-tight leading-tight text-white">
-                            Bloqué sur un problème ?<br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600">L'Uber du savoir-faire.</span>
-                        </h2>
-
-                        <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-                            Connectez-vous instantanément avec un expert pour une session vidéo de 3 minutes.
-                            <br />"Donnez 10 min, recevez 10 min".
-                        </p>
-
-                        <div className="flex justify-center gap-6 mt-12">
-                            <button
-                                onClick={handleRequestHelp}
-                                className="group relative px-8 py-4 bg-amber-500 rounded-xl font-bold text-lg shadow-xl hover:scale-105 transition-all text-black overflow-hidden"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
-                                <span className="flex items-center gap-2">
-                                    <Zap className="w-5 h-5 fill-current" />
-                                    SOS Expertise
-                                </span>
-                                <div className="absolute inset-0 rounded-xl ring-2 ring-white/20 group-hover:ring-amber-300 transition-all" />
-                            </button>
-
-                            <button className="px-8 py-4 glass rounded-xl font-bold text-lg hover:bg-white/5 transition-colors text-slate-200">
-                                Devenir Mentor
-                            </button>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-20 text-left">
-                            <FeatureCard
-                                icon={<Clock className="w-8 h-8 text-yellow-400" />}
-                                title="3 Minutes Max"
-                                desc="Limite stricte. Force la concision. Respecte votre temps."
-                            />
-                            <FeatureCard
-                                icon={<Rocket className="w-8 h-8 text-amber-500" />}
-                                title="Time Banking"
-                                desc="Gagnez du temps en aidant les autres. Système équitable."
-                            />
-                            <FeatureCard
-                                icon={<MessageSquare className="w-8 h-8 text-orange-400" />}
-                                title="Contexte Immédiat"
-                                desc="L'IA résume votre problème avant l'appel."
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {mode === 'requesting' && (
-                    <div className="glass p-8 rounded-2xl max-w-xl mx-auto text-left animate-slide-up border border-white/10 shadow-2xl">
-                        {isFinding ? (
-                            <div className="flex flex-col items-center justify-center py-12 space-y-6">
-                                <div className="relative w-24 h-24">
-                                    <div className="absolute inset-0 border-4 border-slate-700/50 rounded-full"></div>
-                                    <div className="absolute inset-0 border-4 border-brand-500 rounded-full border-t-transparent animate-spin"></div>
-                                    <Zap className="absolute inset-0 m-auto w-8 h-8 text-brand-500 animate-pulse" />
-                                </div>
-                                <h3 className="text-xl font-bold text-white">Finding an Expert...</h3>
-                                <p className="text-slate-400 text-sm">Matching your problem with our top mentors.</p>
-                            </div>
-                        ) : (
-                            <>
-                                <h3 className="text-2xl font-bold mb-6 text-white">Describe your blocker</h3>
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-400 mb-1">Topic</label>
-                                        <input id="topic-input" type="text" placeholder="e.g. React useEffect loop" className="w-full bg-black/40 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand-500 transition-colors" />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-400 mb-1">Context (or record audio)</label>
-                                        <textarea id="context-input" rows="4" placeholder="I'm trying to update state but..." className="w-full bg-black/40 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand-500 transition-colors"></textarea>
-                                    </div>
-
-                                    <button onClick={findMentor} className="w-full py-4 bg-brand-600 rounded-lg font-bold shadow-lg mt-4 hover:brightness-110 transition text-white">
-                                        Find Mentor
-                                    </button>
-
-                                    <button onClick={() => setMode('landing')} className="w-full text-sm text-slate-500 mt-2 hover:text-white transition-colors">
-                                        Cancel
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                )}
-
+            <main className="p-4 pt-8">
+                <Routes>
+                    <Route path="/" element={<HomePage navigate={navigate} />} />
+                    <Route path="/feed" element={<FeedPage navigate={navigate} />} />
+                    <Route path="/post/:postId" element={<PostPage navigate={navigate} />} />
+                </Routes>
             </main>
         </div>
-    )
+    );
+}
+
+function HomePage({ navigate }) {
+    return (
+        <div className="max-w-4xl mx-auto text-center py-12">
+            {/* Hero */}
+            <div className="mb-12">
+                <div className="inline-block px-4 py-1 rounded-full bg-blue-500/20 text-xs font-mono text-blue-400 mb-6 border border-blue-500/30">
+                    FORUM D'ENTRAIDE • 3 MIN SESSIONS
+                </div>
+
+                <h2 className="text-5xl md:text-6xl font-extrabold tracking-tight leading-tight text-white mb-6">
+                    Bloqué sur un problème ?<br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600">
+                        La communauté vous aide.
+                    </span>
+                </h2>
+
+                <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-8">
+                    Postez votre problème, recevez des réponses, et connectez-vous en vidéo avec un mentor.
+                </p>
+
+                <button
+                    onClick={() => navigate('/feed')}
+                    className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-lg shadow-xl hover:scale-105 transition-all"
+                >
+                    <Zap className="w-5 h-5" />
+                    Accéder au Forum
+                </button>
+            </div>
+
+            {/* Features */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                <FeatureCard
+                    icon={<MessageSquare className="w-8 h-8 text-blue-400" />}
+                    title="Forum Communautaire"
+                    desc="Postez vos questions, recevez des commentaires et trouvez des réponses."
+                />
+                <FeatureCard
+                    icon={<Users className="w-8 h-8 text-blue-500" />}
+                    title="Matching Intelligent"
+                    desc="Les mentors proposent leurs disponibilités. Choisissez un créneau."
+                />
+                <FeatureCard
+                    icon={<Clock className="w-8 h-8 text-blue-600" />}
+                    title="Sessions 3 Minutes"
+                    desc="Vidéo + chat enrichi. Échange de fichiers et partage d'écran."
+                />
+            </div>
+        </div>
+    );
+}
+
+function FeedPage({ navigate }) {
+    return (
+        <div className="py-4">
+            <PostFeed onPostClick={(postId) => navigate(`/post/${postId}`)} />
+        </div>
+    );
+}
+
+function PostPage({ navigate }) {
+    const { postId } = useParams();
+    return (
+        <div className="py-4">
+            <PostDetail postId={postId} onBack={() => navigate('/feed')} />
+        </div>
+    );
 }
 
 function FeatureCard({ icon, title, desc }) {
     return (
-        <div className="glass p-6 rounded-xl hover:bg-white/5 transition-colors border-white/5">
-            <div className="mb-4 bg-white/5 w-fit p-3 rounded-lg">{icon}</div>
+        <div className="bg-slate-800/50 border border-slate-700 p-6 rounded-xl hover:bg-slate-800 transition-colors">
+            <div className="mb-4 bg-blue-500/10 w-fit p-3 rounded-lg">{icon}</div>
             <h4 className="text-lg font-bold mb-2 text-white">{title}</h4>
             <p className="text-sm text-slate-400 leading-relaxed">{desc}</p>
         </div>
-    )
+    );
+}
+
+function App() {
+    return (
+        <BrowserRouter basename="/Micro-mentor">
+            <AppContent />
+        </BrowserRouter>
+    );
 }
 
 export default App
